@@ -626,25 +626,27 @@ func TestGetGroupsByChannel(t *testing.T) {
 		},
 	}
 
-	_, response := th.SystemAdminClient.GetGroupsByChannel("asdfasdf", opts)
+	_, _, response := th.SystemAdminClient.GetGroupsByChannel("asdfasdf", opts)
 	CheckBadRequestStatus(t, response)
 
 	th.App.SetLicense(nil)
 
-	_, response = th.SystemAdminClient.GetGroupsByChannel(th.BasicChannel.Id, opts)
+	_, _, response = th.SystemAdminClient.GetGroupsByChannel(th.BasicChannel.Id, opts)
 	CheckNotImplementedStatus(t, response)
 
 	th.App.SetLicense(model.NewTestLicense("ldap"))
 
-	_, response = th.Client.GetGroupsByChannel(th.BasicChannel.Id, opts)
+	privateChannel := th.CreateChannelWithClient(th.SystemAdminClient, model.CHANNEL_PRIVATE)
+
+	_, _, response = th.Client.GetGroupsByChannel(privateChannel.Id, opts)
 	CheckForbiddenStatus(t, response)
 
-	groups, response := th.SystemAdminClient.GetGroupsByChannel(th.BasicChannel.Id, opts)
+	groups, _, response := th.SystemAdminClient.GetGroupsByChannel(th.BasicChannel.Id, opts)
 	assert.Nil(t, response.Error)
 	assert.ElementsMatch(t, []*model.Group{group}, groups)
 
-	groups, response = th.SystemAdminClient.GetGroupsByChannel(model.NewId(), opts)
-	assert.Nil(t, response.Error)
+	groups, _, response = th.SystemAdminClient.GetGroupsByChannel(model.NewId(), opts)
+	assert.Equal(t, "store.sql_channel.get.existing.app_error", response.Error.Id)
 	assert.Empty(t, groups)
 }
 
